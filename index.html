@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>首爾危機：台海戰火下的青瓦台決策</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card: #131b2e;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --text: #e2e8f0;
+      --subtext: #94a3b8;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      display: flex;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .chat-container {
+      width: 100%;
+      max-width: 760px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--card);
+      border-left: 1px solid #1e293b;
+      border-right: 1px solid #1e293b;
+    }
+    .header {
+      padding: 14px 18px;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .character-info h2 { font-size: 1.05rem; color: #f8fafc; }
+    .character-info span { font-size: 0.8rem; color: var(--subtext); }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .stat-badge { 
+      font-size: 0.88rem; 
+      font-weight: 700; 
+      color: #38bdf8; 
+      background: #082f49;
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid #0284c7;
+      white-space: nowrap;
+    }
+    .btn-reset {
+      background: transparent;
+      border: 1px solid #334155;
+      color: var(--subtext);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .btn-reset:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    
+    /* 核心對話滾動視窗：確保只有內部能滾動 */
+    .messages {
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 20px 18px;
+      overflow-y: scroll;
+      display: block; /* 改為原生 block，避免 flex 互相擠壓重疊 */
+    }
+
+    /* 獨立對話外框：嚴禁壓縮，確保每個動作獨立佔據一整塊 */
+    .msg-block {
+      width: 100%;
+      margin-bottom: 24px;
+      display: block;
+      clear: both;
+    }
+    .user-block {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .assistant-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      width: 100%;
+    }
+
+    /* 氣泡與卡片共同屬性 */
+    .bubble {
+      max-width: 85%;
+      padding: 13px 16px;
+      border-radius: 12px;
+      font-size: 0.93rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      flex-shrink: 0;
+    }
+    .user {
+      background: #1e40af;
+      color: #fff;
+      border-bottom-right-radius: 2px;
+    }
+    .assistant {
+      width: 100%;
+      max-width: 100%;
+      background: #1e293b;
+      color: var(--text);
+      border-bottom-left-radius: 2px;
+      border: 1px solid #334155;
+    }
+    .action-text {
+      color: #7dd3fc;
+      font-style: italic;
+    }
+
+    /* 即時戰情新聞簡報卡片 */
+    .news-card {
+      width: 100%;
+      background: #0b1329;
+      border: 1px solid #1d4ed8;
+      border-radius: 10px;
+      padding: 14px 16px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+      flex-shrink: 0;
+    }
+    .news-title {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .news-item {
+      font-size: 0.88rem;
+      line-height: 1.5;
+      padding: 8px 0;
+      border-bottom: 1px dashed #1e293b;
+      color: #cbd5e1;
+    }
+    .news-item:last-child { border-bottom: none; }
+    .news-tag {
+      font-size: 0.72rem;
+      padding: 3px 6px;
+      border-radius: 4px;
+      margin-right: 8px;
+      font-weight: 600;
+    }
+    .tag-kr { background: #1e3a8a; color: #93c5fd; }
+    .tag-intl { background: #831843; color: #f472b6; }
+
+    /* 國策動員與戰略指標卡片 */
+    .status-card {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 14px 16px;
+      flex-shrink: 0;
+    }
+    .status-header {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #f59e0b;
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+    }
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      font-size: 0.84rem;
+    }
+    .status-cell {
+      background: #1e293b;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      border: 1px solid #273549;
+    }
+    .status-label { color: var(--subtext); }
+    .status-value { font-weight: 600; color: #f8fafc; }
+    .status-value.danger { color: #f87171; }
+    .status-value.warning { color: #fbbf24; }
+    .status-value.success { color: #34d399; }
+
+    /* 參謀建議面板 */
+    .suggestions-panel {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px 18px;
+      background: #0b1120;
+      border-top: 1px solid #1e293b;
+      flex-shrink: 0;
+    }
+    .suggestions-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--subtext);
+    }
+    .btn-close-suggestions {
+      background: none;
+      border: none;
+      color: var(--subtext);
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .suggestion-btn {
+      text-align: left;
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.86rem;
+      cursor: pointer;
+      line-height: 1.4;
+      transition: all 0.15s ease;
+    }
+    .suggestion-btn:hover {
+      background: #334155;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+
+    /* 底部輸入區域 */
+    .input-bar {
+      padding: 14px 18px;
+      border-top: 1px solid #1e293b;
+      display: flex;
+      gap: 10px;
+      background: #0f172a;
+      flex-shrink: 0;
+    }
+    input {
+      flex: 1;
+      padding: 11px 16px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #090d16;
+      color: #fff;
+      outline: none;
+      font-size: 0.92rem;
+    }
+    input:focus { border-color: var(--accent); }
+    button.btn-base {
+      padding: 10px 18px;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+    button.btn-base:hover { opacity: 0.9; }
+    button.btn-base:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.send-btn { background: var(--accent); }
+    button.suggest-btn { background: #334155; border: 1px solid #475569; }
+  </style>
+</head>
+<body>
+
+<div class="chat-container">
+  <div class="header">
+    <div class="character-info">
+      <h2>國家安保室戰情指揮中心</h2>
+      <span>國家安全顧問（玩者身份：大韓民國總統）</span>
+    </div>
+    <div class="header-actions">
+      <div class="stat-badge" id="affection-display">安保穩定度: 50</div>
+      <button class="btn-reset" onclick="resetSave()">重啟模擬</button>
+    </div>
+  </div>
+
+  <!-- 對話瀑布流 -->
+  <div class="messages" id="message-list"></div>
+
+  <!-- 參謀建議面板 -->
+  <div class="suggestions-panel" id="suggestions-panel">
+    <div class="suggestions-header">
+      <span>參謀處擬定決策方針（點擊直接下達統帥令）</span>
+      <button class="btn-close-suggestions" onclick="closeSuggestions()">✕ 關閉</button>
+    </div>
+    <div id="suggestions-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
+  </div>
+
+  <!-- 底部指令列 -->
+  <div class="input-bar">
+    <input type="text" id="user-input" placeholder="下達總統命令，或使用 *描寫戰情室行動*..." autocomplete="off">
+    <button class="btn-base suggest-btn" id="suggest-btn" onclick="generateSuggestions()">💡 參謀建議</button>
+    <button class="btn-base send-btn" id="send-btn" onclick="handleSend()">下令</button>
+  </div>
+</div>
+
+<script>
+  const GEMINI_API_KEY = "AQ.Ab8RN6KguTQY8dHZ3oa1yS5G4txm92iFn386wHZLsCkMAy92Dg";
+  const MODEL_NAME = "gemini-3.5-flash";
+  const STORAGE_KEY = "rok_crisis_sim_v4";
+
+  const DEFAULT_STATS = {
+    securityStability: 50,
+    budget: 650,
+    approval: 60,
+    population: 51700000,
+    alliance: 75,
+    provocation: 85,
+    foreignReserves: 92,
+    oilReserves: 78,
+    socialStability: "警戒中",
+    satelliteSync: 95,
+    enemyTracking: 88
+  };
+
+  const initialReport = {
+    role: "report_group",
+    briefing: "*面色凝重地快步走進龍山總統府地下戰情室，立正敬禮後迅速遞上剛印出的國情院特急電報。*\n\n總統閣下，三十分鐘前，中國解放軍對台灣本島展開導彈飽和打擊與全面海上封鎖，台海戰事爆發！\n\n北韓全線火砲陣地已褪去偽裝網，金正恩發表了全國動員令；美軍印太司令部要求動用駐韓美軍烏山基地的戰鬥機編隊馳援台海。\n\n北京駐韓大使正要求緊急通話，警告我們若准許美軍出動即視同對華宣戰。國務院、美方、青瓦台各部都在等待您的最高統帥令！",
+    news: [
+      { tag: "國內頭條", source: "韓聯社", title: "【快訊】解放軍全面封鎖台海！青瓦台緊急召開國家安保會議（NSC）" },
+      { tag: "國內頭條", source: "朝鮮日報", title: "朝軍前線長程火砲全數進入射擊陣地 首爾防空警報預備響起" },
+      { tag: "外媒動態", source: "路透社", title: "五角大廈要求駐韓美軍保持「戰略靈活性」馳援台灣，首爾陷入兩難" }
+    ],
+    stats: { ...DEFAULT_STATS }
+  };
+
+  let gameState = {
+    stats: { ...DEFAULT_STATS },
+    messages: []
+  };
+
+  const systemPrompt = `你現在是大韓民國總統府「國家安保室長（安全顧問）」，直接向「總統（玩家）」匯報。
+
+【當前局勢】：
+- 專制軸心：中國全面攻台並封鎖航道，朝俄互防同盟啟動，北韓全線威脅南下。
+- 民主同盟：美、日、台、韓。美軍要求抽調駐韓美軍，北京警告南韓若准許將視同參戰。
+- 玩家身分：南韓總統。尊稱玩家為「總統閣下」。
+
+【輸出格式規範】：
+每一次回覆，你必須【嚴格輸出 JSON 格式】，切勿包含任何額外的 Markdown 引言或字串。格式如下：
+{
+  "briefing": "顧問的匯報內容，保持軍政緊迫感，需包含星號動作描寫（例如 *指著西海雷達圖*）。",
+  "news": [
+    { "tag": "國內頭條", "source": "媒體名如韓聯社/中央日報", "title": "報導標題與摘要" },
+    { "tag": "國內頭條", "source": "媒體名如朝鮮日報/東亞日報", "title": "報導標題與摘要" },
+    { "tag": "外媒動態", "source": "媒體名如紐約時報/路透社/NHK", "title": "外媒觀察與國際輿論" }
+  ],
+  "statsDelta": {
+    "securityStability": 安保穩定度增減（-10~+10）,
+    "budget": 財政增減數值（兆韓元，負值代表國防開支與經濟停滯損失）,
+    "approval": 總統支持度增減（百分比正負浮動）,
+    "population": 人口增減數值（若遭到砲擊/交火為負數，否則填 0）,
+    "alliance": 韓美同盟增減（-10~+10）,
+    "provocation": 北韓挑釁機率增減（-10~+10）,
+    "foreignReserves": 外匯儲備率增減（-5~+5）,
+    "oilReserves": 戰略儲油率增減（-10~+5）,
+    "socialStability": "穩定" 或 "警戒中" 或 "輿論譁然" 或 "極度混亂",
+    "satelliteSync": 衛星情報同步率增減（-5~+5）,
+    "enemyTracking": 敵軍動向追蹤度增減（-5~+5）
+  }
+}`;
+
+  function loadGame() {
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    if (savedData) {
+      try {
+        gameState = JSON.parse(savedData);
+      } catch (e) {
+        resetState();
+      }
+    } else {
+      resetState();
+    }
+    updateUI();
+  }
+
+  function saveGame() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
+  }
+
+  function resetState() {
+    gameState = {
+      stats: { ...DEFAULT_STATS },
+      messages: [JSON.parse(JSON.stringify(initialReport))]
+    };
+  }
+
+  function resetSave() {
+    if (confirm("確定要重啟整個戰情模擬，清除所有歷史決策與國策數據嗎？")) {
+      localStorage.removeItem(STORAGE_KEY);
+      resetState();
+      updateUI();
+      closeSuggestions();
+    }
+  }
+
+  function formatNumber(num) {
+    return new Intl.NumberFormat().format(num);
+  }
+
+  function updateUI() {
+    // 頂部安保穩定度徽章
+    const stab = gameState.stats.securityStability ?? 50;
+    const badge = document.getElementById("affection-display");
+    badge.innerText = `安保穩定度: ${stab}`;
+    if (stab < 30) {
+      badge.style.color = "#f87171";
+      badge.style.borderColor = "#ef4444";
+    } else {
+      badge.style.color = "#38bdf8";
+      badge.style.borderColor = "#0284c7";
+    }
+
+    const list = document.getElementById("message-list");
+    list.innerHTML = "";
+
+    // 依序縱向渲染每一個歷史區塊
+    gameState.messages.forEach(msg => {
+      const block = document.createElement("div");
+
+      if (msg.role === "user") {
+        block.className = "msg-block user-block";
+        const bubble = document.createElement("div");
+        bubble.className = "bubble user";
+        bubble.innerHTML = msg.text.replace(/\*(.*?)\*/g, '<span class="action-text">* $1 *</span>');
+        block.appendChild(bubble);
+      } else if (msg.role === "report_group") {
+        block.className = "msg-block assistant-block";
+
+        // 1. 顧問匯報
+        const bubble = document.createElement("div");
+        bubble.className = "bubble assistant";
+        bubble.innerHTML = msg.briefing.replace(/\*(.*?)\*/g, '<span class="action-text">* $1 *</span>');
+        block.appendChild(bubble);
+
+        // 2. 新聞簡報卡片
+        if (msg.news && msg.news.length > 0) {
+          const newsCard = document.createElement("div");
+          newsCard.className = "news-card";
+          newsCard.innerHTML = `<div class="news-title">📡 即時戰情報導與外電快訊</div>`;
+          msg.news.forEach(n => {
+            const item = document.createElement("div");
+            item.className = "news-item";
+            const tagClass = n.tag.includes("國") ? "tag-kr" : "tag-intl";
+            item.innerHTML = `<span class="news-tag ${tagClass}">${n.tag}·${n.source}</span>${n.title}`;
+            newsCard.appendChild(item);
+          });
+          block.appendChild(newsCard);
+        }
+
+        // 3. 戰略動員與國策指標卡片
+        const s = msg.stats || gameState.stats;
+        const statCard = document.createElement("div");
+        statCard.className = "status-card";
+        statCard.innerHTML = `
+          <div class="status-header">📊 大韓民國國家戰略與動員指標</div>
+          <div class="status-grid">
+            <div class="status-cell">
+              <span class="status-label">安保穩定度</span>
+              <span class="status-value ${s.securityStability < 35 ? 'danger' : 'success'}">${s.securityStability} / 100</span>
+            </div>
+            <div class="status-cell">
+              <span class="status-label">國家財政</span>
+              <span class="status-value">${s.budget} 兆韓元</span>
+            </div>
+            <div class="status-cell">
+              <span class="status-label">總統支持度</span>
+              <span class="status-value ${s.approval < 40 ? 'danger' : ''}">${s.approval}%</span>
+            </div>
+            <div class="status-cell">
+              <span class="status-label">人口總數</span>
+              <span class="status-value">${formatNumber(s.population)} 名</span>
+            </div>
+            <div class="status-cell">
+              <span class="status-label">韓美同盟穩定度</span>
+              <span class="status-value">${s.alliance}%</span>
+            </div>
+            <div class="status-cell">
+              <span class="status-label">北韓挑釁機率</span>
+              <span class="status-value ${s.provocation > 80 ? 'danger' : 'warning'}">${s.provocation}%</span>
+            </div>
+            <div class="status-cell">
+              <span class="status-label">戰略儲油率</span>
+              <span class="status-value">${s.oilReserves}%</span>
+            </div>
+            <div class="status-cell">
+              <span class="status-label">外匯儲備率</span>
+              <span class="status-value">${s.foreignReserves}%</span>
+            </div>
+            <div class="status-cell">
+              <span class="status-label">社會穩定度</span>
+              <span class="status-value warning">${s.socialStability}</span>
+            </div>
+            <div class="status-cell">
+              <span class="status-label">衛星情報同步</span>
+              <span class="status-value">${s.satelliteSync}%</span>
+            </div>
+          </div>
+        `;
+        block.appendChild(statCard);
+      }
+
+      list.appendChild(block);
+    });
+
+    // 自動捲動到最底部
+    setTimeout(() => {
+      list.scrollTop = list.scrollHeight;
+    }, 50);
+  }
+
+  function closeSuggestions() {
+    document.getElementById("suggestions-panel").style.display = "none";
+  }
+
+  async function callGeminiCrisisApi(userDecision) {
+    const historyContents = [];
+    
+    gameState.messages.forEach(m => {
+      if (m.role === "user") {
+        historyContents.push({ role: "user", parts: [{ text: m.text }] });
+      } else if (m.role === "report_group") {
+        historyContents.push({ role: "model", parts: [{ text: `安保顧問匯報：${m.briefing}` }] });
+      }
+    });
+
+    const promptWithState = `
+【總統最高指令】：${userDecision}
+【當前戰情數據】：
+- 安保穩定度：${gameState.stats.securityStability}
+- 財政：${gameState.stats.budget} 兆韓元
+- 總統支持度：${gameState.stats.approval}%
+- 人口數：${gameState.stats.population}
+- 同盟穩定：${gameState.stats.alliance}%
+- 北韓挑釁率：${gameState.stats.provocation}%
+請根據總統的指令評估局勢，回傳顧問匯報、3則新聞（2國內+1外媒）以及各項指標的變化數值（嚴格JSON格式）。
+`;
+
+    historyContents.push({ role: "user", parts: [{ text: promptWithState }] });
+
+    const payload = {
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: historyContents,
+      generationConfig: {
+        temperature: 0.7,
+        responseMimeType: "application/json"
+      }
+    };
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }
+    );
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    return JSON.parse(raw);
+  }
+
+  async function handleSend() {
+    const input = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+    const text = input.value.trim();
+    if (!text || sendBtn.disabled) return;
+
+    closeSuggestions();
+
+    // 1. 寫入總統指令
+    gameState.messages.push({ role: "user", text: text });
+    input.value = "";
+    saveGame();
+    updateUI();
+
+    sendBtn.disabled = true;
+
+    try {
+      const result = await callGeminiCrisisApi(text);
+
+      // 2. 結算數據
+      const d = result.statsDelta || {};
+      const s = gameState.stats;
+
+      s.securityStability = Math.min(100, Math.max(0, (s.securityStability ?? 50) + (d.securityStability || 0)));
+      s.budget = Math.max(0, s.budget + (d.budget || 0));
+      s.approval = Math.min(100, Math.max(0, s.approval + (d.approval || 0)));
+      s.population = Math.max(0, s.population + (d.population || 0));
+      s.alliance = Math.min(100, Math.max(0, s.alliance + (d.alliance || 0)));
+      s.provocation = Math.min(100, Math.max(0, s.provocation + (d.provocation || 0)));
+      s.foreignReserves = Math.min(100, Math.max(0, s.foreignReserves + (d.foreignReserves || 0)));
+      s.oilReserves = Math.min(100, Math.max(0, s.oilReserves + (d.oilReserves || 0)));
+      if (d.socialStability) s.socialStability = d.socialStability;
+      s.satelliteSync = Math.min(100, Math.max(0, s.satelliteSync + (d.satelliteSync || 0)));
+      s.enemyTracking = Math.min(100, Math.max(0, s.enemyTracking + (d.enemyTracking || 0)));
+
+      // 3. 儲存顧問這輪的所有資訊
+      gameState.messages.push({
+        role: "report_group",
+        briefing: result.briefing || "（戰情室連線中斷...）",
+        news: result.news || [],
+        stats: { ...s }
+      });
+
+      saveGame();
+      updateUI();
+    } catch (err) {
+      console.error(err);
+      alert("戰情連線異常：" + err.message);
+    } finally {
+      sendBtn.disabled = false;
+    }
+  }
+
+  async function generateSuggestions() {
+    const suggestBtn = document.getElementById("suggest-btn");
+    const panel = document.getElementById("suggestions-panel");
+    const container = document.getElementById("suggestions-container");
+
+    suggestBtn.disabled = true;
+    suggestBtn.innerText = "擬定中...";
+
+    const promptText = `
+當前情境：玩家是大韓民國總統，台海戰爭爆發，北韓與中俄步步進逼。
+請針對最新戰情與數據，為總統擬定 3 個截然不同的國策方針命令（文字簡明有力，每條在 35 字內）。
+嚴格回傳 JSON 字串陣列，例如：
+["方針一", "方針二", "方針三"]
+`;
+
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: promptText }] }],
+            generationConfig: {
+              temperature: 0.7,
+              responseMimeType: "application/json"
+            }
+          })
+        }
+      );
+
+      const data = await res.json();
+      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+      const options = JSON.parse(raw);
+
+      container.innerHTML = "";
+      options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.className = "suggestion-btn";
+        btn.innerText = opt;
+        btn.onclick = () => {
+          document.getElementById("user-input").value = opt;
+          closeSuggestions();
+          handleSend();
+        };
+        container.appendChild(btn);
+      });
+
+      panel.style.display = "flex";
+    } catch (err) {
+      console.error("生成建議失敗:", err);
+      alert("參謀系統通訊失敗：" + err.message);
+    } finally {
+      suggestBtn.disabled = false;
+      suggestBtn.innerText = "💡 參謀建議";
+    }
+  }
+
+  document.getElementById("user-input").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") handleSend();
+  });
+
+  loadGame();
+</script>
+
+</body>
+</html>
